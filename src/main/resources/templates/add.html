@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add employee</title>
+</head>
+<body>
+    <form method="post" th:action="@{/add}">
+        First name: <input type="text" name="firstName" required><br/>
+        Last name: <input type="text" name="lastName" required><br/>
+        Age: <input type="number" name="age" required><br/>
+        PESEL: <input type="text" name="PESEL" required><br/><br/>
+
+        Registered address:<br/>
+        City: <input type="text" name="cityRegistered" required><br/>
+        Street: <input type="text" name="streetRegistered"><br/>
+        House number: <input type="text" name="houseNrRegistered" required><br/>
+        Flat number: <input type="text" name="flatNrRegistered"><br/><br/>
+
+        Residence address (optional):<br/>
+        City: <input type="text" name="cityResidence"><br/>
+        Street: <input type="text" name="streetResidence"><br/>
+        House number: <input type="text" name="houseNrResidence"><br/>
+        Flat number: <input type="text" name="flatNrResidence"><br/><br/>
+
+        Position: <input type="text" name="position" required><br/>
+        Salary: <input type="text" name="salary" required><br/>
+        Department: <input list="departments" name="departmentName" required><br/>
+        <datalist id="departments">
+            <option value="IT">
+            <option value="HR">
+            <option value="PR">
+            <option value="Accounting">
+            <option value="Legal">
+        </datalist>
+        <input type="submit" value="Create new employee">
+    </form>
+
+</body>
+</html>
