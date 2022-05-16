@@ -122,7 +122,7 @@ public class EmployeeService {
             responseEntity = ResponseEntity.status(HttpStatus.OK).body("Employee updated.");
         } else {
             employeeRepository.insertNewEmployee(id);
-            employee = employeeRepository.findById(id).get();
+            employee = employeeRepository.getById(id);
             person = new Person();
             address = new Address();
             employee.setPerson(person);

@@ -16,9 +16,4 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     @Transactional
     @Query(value = "INSERT INTO employee (id) VALUES (:id)", nativeQuery = true)
     void insertNewEmployee(@Param("id") Long id);
-
-
-
-
-
 }
