@@ -3,10 +3,12 @@ package com.example.company.controller;
 import com.example.company.model.EmployeeForm;
 import com.example.company.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
+@RequestMapping("/employees")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -16,29 +18,26 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
-    @GetMapping("/add")
+    @GetMapping("/employee")
     String addEmployee() {
         return "add";
     }
 
-    @PostMapping("/add")
+    @PostMapping("/employee")
     @ResponseBody
-    String createEmployee(EmployeeForm employeeForm) {
-        employeeService.createNewEmployee(employeeForm);
-        return "Data submitted successfully";
+    ResponseEntity<?> createEmployee(EmployeeForm employeeForm) {
+        return employeeService.createNewEmployee(employeeForm);
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/employee/{id}")
     @ResponseBody
-    String deleteEmployee(@PathVariable Long id) {
-        employeeService.deleteEmployeeById(id);
-        return "Employee deleted";
+    ResponseEntity deleteEmployee(@PathVariable Long id) {
+        return employeeService.deleteEmployeeById(id);
     }
 
-    @PutMapping("/edit/{id}")
+    @PutMapping("/employee/{id}")
     @ResponseBody
-    String editEmployee(@PathVariable Long id, EmployeeForm employeeForm) {
-        employeeService.updateEmployee(id, employeeForm);
-        return "Update received";
+    ResponseEntity<?> editEmployee(@PathVariable Long id, EmployeeForm employeeForm) {
+        return employeeService.updateEmployee(id, employeeForm);
     }
 }

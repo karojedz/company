@@ -28,9 +28,4 @@ public class Person {
 
     @OneToOne(mappedBy = "person")
     private Employee employee;
-
-    public void setAddress(Address address) {
-        this.address = address;
-        address.setPerson(this);
-    }
 }
