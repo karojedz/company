@@ -27,13 +27,7 @@ public class Employee {
     private BigDecimal salary;
     private String position;
 
-    public void setPerson(Person person) {
-        this.person = person;
-        person.setEmployee(this);
-    }
-
-    public void setDepartment(Department department) {
-        this.department = department;
-        department.getEmployees().add(this);
+    public Employee(Long id) {
+        this.id = id;
     }
 }
