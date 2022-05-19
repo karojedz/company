@@ -2,7 +2,6 @@ package com.example.company.service;
 
 import com.example.company.model.*;
 import com.example.company.repository.EmployeeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -11,12 +10,11 @@ import java.util.List;
 @Service
 public class EmployeeService {
 
-    private EmployeeRepository employeeRepository;
-    private AddressService addressService;
-    private DepartmentService departmentService;
-    private PersonService personService;
+    private final EmployeeRepository employeeRepository;
+    private final AddressService addressService;
+    private final DepartmentService departmentService;
+    private final PersonService personService;
 
-    @Autowired
     public EmployeeService (EmployeeRepository employeeRepository, AddressService addressService,
                             DepartmentService departmentService, PersonService personService) {
         this.employeeRepository = employeeRepository;
@@ -109,7 +107,7 @@ public class EmployeeService {
         Employee employee;
         Object employeeOrErrorMessage = findEmployeeWithId(id);
         if (employeeOrErrorMessage instanceof String) {
-            return (String) employeeOrErrorMessage;
+            return employeeOrErrorMessage;
         } else {
             employee = (Employee) employeeOrErrorMessage;
         }

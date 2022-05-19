@@ -13,7 +13,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import spock.lang.Specification
 
 @WebMvcTest
-class EmployeeControllerSpecification extends Specification{
+class EmployeeControllerTest extends Specification{
 
     EmployeeService employeeService = Mock()
 

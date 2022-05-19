@@ -2,12 +2,15 @@ package com.example.company.service
 
 import com.example.company.model.Address
 import com.example.company.model.Department
+import com.example.company.model.Employee
 import com.example.company.model.EmployeeForm
+import com.example.company.model.Person
 import com.example.company.repository.EmployeeRepository
 import spock.lang.Specification
 
 class EmployeeServiceTest extends Specification{
 
+    def ID = 1L
     def FIRST_NAME = "name"
     def LAST_NAME = "surname"
     def AGE = 25
@@ -47,24 +50,74 @@ class EmployeeServiceTest extends Specification{
     def "should save new employee"() {
         when:
         Department department = new Department()
-        departmentService.findDepartmentByName("Department") >> department
+        departmentService.findDepartmentByName(DEPARTMENT_NAME) >> department
         employeeService.createNewEmployee(employeeForm)
 
         then:
         1 * employeeRepository.save(_)
     }
 
-    def "test deleteEmployeeById"() {
-    }
-
-    def "test updateEmployee"() {
-    }
-
-    def "should extract Address from EmployeeForm"() {
+    def "should delete employee with given id"() {
         when:
-        Address address = employeeService.extractAddressFromEmployeeForm(employeeForm)
+        Employee employee = new Employee()
+        Person person = new Person()
+        person.setAddress(new Address())
+        employee.setPerson(person)
+        employee.setId(ID)
+        employee.setPosition(POSITION)
+        employee.setSalary(new BigDecimal(SALARY))
+        Department department = new Department()
+        department.getEmployees().add(employee)
+        employee.setDepartment(department)
 
+        and:
+        employeeRepository.getById(ID) >> employee
+        employeeRepository.deleteById(ID) >>
+        employeeService.deleteEmployeeById(ID)
+
+        then:
+        1 * employeeRepository.deleteById(ID)
     }
 
+    def "should update existing employee"() {
+        when:
+        Employee employee = new Employee()
+        Person person = new Person()
+        person.setAddress(new Address())
+        employee.setPerson(person)
+        employee.setId(ID)
+        employee.setPosition(POSITION)
+        employee.setSalary(new BigDecimal(SALARY))
+        Department department = new Department()
+        department.setDepartmentName(DEPARTMENT_NAME)
+        department.getEmployees().add(employee)
+        employee.setDepartment(department)
 
+        employee.setPerson(person)
+
+        employeeRepository.findById(ID) >> Optional.of(employee)
+        departmentService.findDepartmentByName(DEPARTMENT_NAME) >> department
+        employeeService.updateEmployee(ID, employeeForm)
+
+        then:
+        1 * employeeRepository.save(_)
+    }
+
+    def "should return error message after trying to update non-existent employee"() {
+        when:
+        employeeRepository.findById(ID) >> Optional.empty()
+
+        then:
+        employeeService.updateEmployee(ID, employeeForm) == "Employee with id=" + ID + " doesn't exist. \nYou should create it, not update."
+    }
+
+    def "are private methods called from here? They are"() {
+        when:
+        Department department = new Department()
+        departmentService.findDepartmentByName(DEPARTMENT_NAME) >> department
+        Employee employee = employeeService.createEmployeeWithEmployeeForm(employeeForm)
+
+        then:
+        employee.getPosition() == POSITION
+    }
 }
