@@ -3,13 +3,10 @@ package com.example.company.service;
 import com.example.company.model.*;
 import com.example.company.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class EmployeeService {
@@ -28,19 +25,10 @@ public class EmployeeService {
         this.personService = personService;
     }
 
-    public ResponseEntity<String> createNewEmployee(EmployeeForm employeeForm) {
-        Address address = extractAddressFromEmployeeForm(employeeForm);
-        Person person = extractPersonFromEmployeeForm(employeeForm);
-        person.setAddress(address);
-        address.setPerson(person);
-
-        Employee employee = extractEmployeeFromEmployeeForm(employeeForm);
-        employee.setPerson(person);
-        person.setEmployee(employee);
-        Department department = departmentService.findDepartmentByName(employeeForm.getDepartmentName());
-        addDepartmentToEmployee(department, employee);
+    public EmployeeForm createNewEmployee(EmployeeForm employeeForm) {
+        Employee employee = createEmployeeWithEmployeeForm(employeeForm);
         employeeRepository.save(employee);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Employee created successfully.");
+        return employeeForm;
     }
 
     private Address extractAddressFromEmployeeForm(EmployeeForm employeeForm) {
@@ -55,13 +43,21 @@ public class EmployeeService {
         return person;
     }
 
-    private Employee extractEmployeeFromEmployeeForm(EmployeeForm employeeForm) {
+    private Employee createEmployeeWithEmployeeForm(EmployeeForm employeeForm) {
         Employee employee = new Employee();
         updateEmployeeWithEmployeeForm(employee, employeeForm);
+        Address address = extractAddressFromEmployeeForm(employeeForm);
+        Person person = extractPersonFromEmployeeForm(employeeForm);
+        person.setAddress(address);
+        address.setPerson(person);
+        employee.setPerson(person);
+        person.setEmployee(employee);
+        Department department = departmentService.findDepartmentByName(employeeForm.getDepartmentName());
+        addDepartmentToEmployee(department, employee);
         return employee;
     }
 
-    private void updateAddressWithEmployeeForm(Address address, EmployeeForm employeeForm) {
+    private boolean updateAddressWithEmployeeForm(Address address, EmployeeForm employeeForm) {
         address.setCityRegistered(employeeForm.getCityRegistered());
         address.setStreetRegistered(employeeForm.getStreetRegistered());
         address.setHouseNrRegistered(employeeForm.getHouseNrRegistered());
@@ -71,71 +67,121 @@ public class EmployeeService {
         address.setStreetResidence(employeeForm.getStreetResidence());
         address.setHouseNrResidence(employeeForm.getHouseNrResidence());
         address.setFlatNrResidence(employeeForm.getFlatNrResidence());
+        return true;
     }
 
-    private void updatePersonWithEmployeeForm(Person person, EmployeeForm employeeForm) {
+    private boolean updatePersonWithEmployeeForm(Person person, EmployeeForm employeeForm) {
         person.setFirstName(employeeForm.getFirstName());
         person.setLastName(employeeForm.getLastName());
         person.setAge(employeeForm.getAge());
         person.setPESEL(employeeForm.getPESEL());
+        return true;
     }
 
-    private void updateEmployeeWithEmployeeForm(Employee employee, EmployeeForm employeeForm) {
+    private boolean updateEmployeeWithEmployeeForm(Employee employee, EmployeeForm employeeForm) {
         employee.setPosition(employeeForm.getPosition());
         employee.setSalary(new BigDecimal(employeeForm.getSalary()));
+        return true;
     }
 
-    private void addDepartmentToEmployee(Department department, Employee employee) {
+    private boolean addDepartmentToEmployee(Department department, Employee employee) {
         employee.setDepartment(department);
         department.getEmployees().add(employee);
+        return true;
     }
 
-    private void updateDepartment(Department departmentOld, Department departmentNew, Employee employee) {
+    private boolean updateDepartment(Department departmentOld, Department departmentNew, Employee employee) {
         departmentOld.getEmployees().remove(employee);
-        departmentNew.getEmployees().add(employee);
-        employee.setDepartment(departmentNew);
+        addDepartmentToEmployee(departmentNew, employee);
+        return true;
     }
 
-    public ResponseEntity deleteEmployeeById(Long id) {
+    public EmployeeForm deleteEmployeeById(Long id) {
         Employee employee = employeeRepository.getById(id);
+        EmployeeForm employeeForm = mapToEmployeeForm(employee);
         List<Employee> employees = employee.getDepartment().getEmployees();
         employees.remove(employee);
         employeeRepository.deleteById(id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return employeeForm;
     }
 
-    public ResponseEntity<String> updateEmployee(Long id, EmployeeForm employeeForm) {
-        Optional<Employee> foundEmployee = employeeRepository.findById(id);
+    public Object updateEmployee(Long id, EmployeeForm employeeForm) {
         Employee employee;
-        Person person;
-        Address address;
-        Department department = departmentService.findDepartmentByName(employeeForm.getDepartmentName());
-        ResponseEntity<String> responseEntity;
-        if (foundEmployee.isPresent()) {
-            employee = foundEmployee.get();
-            person = employee.getPerson();
-            address = person.getAddress();
-            Department departmentOld = employee.getDepartment();
-            if (departmentOld!=department) {
-                updateDepartment(departmentOld, department, employee);
-            }
-            responseEntity = ResponseEntity.status(HttpStatus.OK).body("Employee updated.");
+        Object employeeOrErrorMessage = findEmployeeWithId(id);
+        if (employeeOrErrorMessage instanceof String) {
+            return (String) employeeOrErrorMessage;
         } else {
-            employeeRepository.insertNewEmployee(id);
-            employee = employeeRepository.getById(id);
-            person = new Person();
-            address = new Address();
-            employee.setPerson(person);
-            person.setEmployee(employee);
-            person.setAddress(address);
-            address.setPerson(person);
-            addDepartmentToEmployee(department, employee);
-            responseEntity = ResponseEntity.status(HttpStatus.CREATED).body("Employee not found. New employee created.");
+            employee = (Employee) employeeOrErrorMessage;
+        }
+        Person person = employee.getPerson();
+        Address address = employee.getPerson().getAddress();
+        Department departmentOld = employee.getDepartment();
+        Department department = departmentService.findDepartmentByName(employeeForm.getDepartmentName());
+        if (departmentOld!=department) {
+            updateDepartment(departmentOld, department, employee);
         }
         updateAddressWithEmployeeForm(address, employeeForm);
         updatePersonWithEmployeeForm(person, employeeForm);
         updateEmployeeWithEmployeeForm(employee, employeeForm);
         employeeRepository.save(employee);
-        return responseEntity;
+        return employeeForm;
+    }
+
+    public Object findEmployeeWithId(Long id) {
+        String message;
+        try {
+            Employee employee = getEmployeeById(id);
+            return employee;
+        } catch(IllegalArgumentException e) {
+            message = e.getMessage();
+        }
+        return message;
+    }
+
+    private Employee getEmployeeById(Long id) {
+        return employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee with id=" + id + " doesn't exist. \nYou should create it, not update."));
+    }
+
+    private EmployeeForm mapToEmployeeForm(Employee employee) {
+        EmployeeForm employeeForm = new EmployeeForm();
+        fillEmployeeFormWithEmployee(employeeForm, employee);
+        return employeeForm;
+    }
+
+    private boolean fillEmployeeFormWithEmployee(EmployeeForm employeeForm, Employee employee) {
+        employeeForm.setSalary(employee.getSalary().toString());
+        employeeForm.setPosition(employee.getPosition());
+        fillEmployeeFormWithPerson(employeeForm, employee.getPerson());
+        fillEmployeeFormWithAddress(employeeForm, employee.getPerson().getAddress());
+        fillEmployeeFormWithDepartment(employeeForm, employee.getDepartment());
+        return true;
+    }
+
+    private boolean fillEmployeeFormWithPerson(EmployeeForm employeeForm, Person person) {
+        employeeForm.setFirstName(person.getFirstName());
+        employeeForm.setLastName(person.getLastName());
+        employeeForm.setAge(person.getAge());
+        employeeForm.setPESEL(person.getPESEL());
+        return true;
+    }
+
+    private boolean fillEmployeeFormWithAddress(EmployeeForm employeeForm, Address address) {
+        employeeForm.setCityRegistered(address.getCityRegistered());
+        employeeForm.setStreetRegistered(address.getStreetRegistered());
+        employeeForm.setHouseNrRegistered(address.getHouseNrRegistered());
+        employeeForm.setFlatNrRegistered(address.getFlatNrRegistered());
+
+        //the optional address of residence:
+        employeeForm.setCityResidence(address.getCityResidence());
+        employeeForm.setStreetResidence(address.getStreetResidence());
+        employeeForm.setHouseNrResidence(address.getHouseNrResidence());
+        employeeForm.setFlatNrResidence(address.getFlatNrResidence());
+        return true;
+    }
+
+    private boolean fillEmployeeFormWithDepartment(EmployeeForm employeeForm, Department department) {
+        employeeForm.setDepartmentName(department.getDepartmentName());
+        return true;
     }
 }
