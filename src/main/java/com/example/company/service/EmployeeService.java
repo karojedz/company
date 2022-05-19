@@ -2,26 +2,20 @@ package com.example.company.service;
 
 import com.example.company.model.*;
 import com.example.company.repository.EmployeeRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final AddressService addressService;
     private final DepartmentService departmentService;
     private final PersonService personService;
-
-    public EmployeeService (EmployeeRepository employeeRepository, AddressService addressService,
-                            DepartmentService departmentService, PersonService personService) {
-        this.employeeRepository = employeeRepository;
-        this.addressService = addressService;
-        this.departmentService = departmentService;
-        this.personService = personService;
-    }
 
     public EmployeeForm createNewEmployee(EmployeeForm employeeForm) {
         Employee employee = createEmployeeWithEmployeeForm(employeeForm);
@@ -125,7 +119,7 @@ public class EmployeeService {
         return employeeForm;
     }
 
-    public Object findEmployeeWithId(Long id) {
+    private Object findEmployeeWithId(Long id) {
         String message;
         try {
             Employee employee = getEmployeeById(id);

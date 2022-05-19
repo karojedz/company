@@ -111,13 +111,166 @@ class EmployeeServiceTest extends Specification{
         employeeService.updateEmployee(ID, employeeForm) == "Employee with id=" + ID + " doesn't exist. \nYou should create it, not update."
     }
 
-    def "are private methods called from here? They are"() {
+    def "should extract address from employeeForm"() {
         when:
-        Department department = new Department()
-        departmentService.findDepartmentByName(DEPARTMENT_NAME) >> department
-        Employee employee = employeeService.createEmployeeWithEmployeeForm(employeeForm)
+        Address expectedAddress = new Address(ID, CITY_REGISTERED, STREET_REGISTERED, HOUSE_NR_REGISTERED,
+                FLAT_NR_REGISTERED, CITY_RESIDENCE, STREET_RESIDENCE, HOUSE_NR_RESIDENCE, FLAT_NR_RESIDENCE,
+                new Person())
+        Address extracted = employeeService.extractAddressFromEmployeeForm(employeeForm)
+        extracted.setPerson(new Person())
+        extracted.setId(ID)
 
         then:
-        employee.getPosition() == POSITION
+        extracted == expectedAddress
+    }
+
+    def "should extract person from employeeForm"() {
+        when:
+        Person expectedPerson = new Person(ID, FIRST_NAME, LAST_NAME, AGE, PESEL, new Address(), new Employee())
+        Person extracted = employeeService.extractPersonFromEmployeeForm(employeeForm);
+        extracted.setAddress(new Address())
+        extracted.setEmployee(new Employee())
+        extracted.setId(ID)
+
+        then:
+        extracted == expectedPerson
+    }
+
+    def "should create employee with employee form"() {
+        when:
+        Address address =  new Address(ID, CITY_REGISTERED, STREET_REGISTERED, HOUSE_NR_REGISTERED,
+                FLAT_NR_REGISTERED, CITY_RESIDENCE, STREET_RESIDENCE, HOUSE_NR_RESIDENCE, FLAT_NR_RESIDENCE,
+                new Person())
+        Person person = new Person(ID, FIRST_NAME, LAST_NAME, AGE, PESEL, address, new Employee())
+        address.setPerson(person)
+        Department department = new Department()
+        department.setId(ID)
+        department.setDepartmentName(DEPARTMENT_NAME)
+        Employee expectedEmployee = new Employee(ID, person, department, new BigDecimal(SALARY), POSITION)
+        department.getEmployees().add(expectedEmployee)
+
+        and:
+        Department departmentFromEmployeeForm = new Department()
+        departmentFromEmployeeForm.setDepartmentName(DEPARTMENT_NAME)
+        departmentFromEmployeeForm.setId(ID)
+        departmentService.findDepartmentByName(DEPARTMENT_NAME) >> departmentFromEmployeeForm
+        Employee extracted = employeeService.createEmployeeWithEmployeeForm(employeeForm)
+        extracted.setId(ID)
+        extracted.getPerson().setId(ID)
+        extracted.getPerson().getAddress().setId(ID)
+
+        then:
+        extracted == expectedEmployee
+    }
+
+    def "should update existing address with employeeForm"() {
+        when:
+        Address address = new Address()
+
+        then:
+        employeeService.updateAddressWithEmployeeForm(address, employeeForm) == true
+        address.getFlatNrResidence() == FLAT_NR_RESIDENCE
+    }
+
+    def "should update existing person with employeeForm"() {
+        when:
+        Person person = new Person()
+
+        then:
+        employeeService.updatePersonWithEmployeeForm(person, employeeForm) == true
+        person.getPESEL() == PESEL
+    }
+
+    def "should update existing employee with employeeForm"() {
+        when:
+        Employee employee = new Employee()
+
+        then:
+        employeeService.updateEmployeeWithEmployeeForm(employee, employeeForm) == true
+        employee.getSalary() == new BigDecimal(SALARY)
+    }
+
+    def "should create relationship between department and employee"() {
+        when:
+        Department department = new Department()
+        Employee employee = new Employee()
+
+        then:
+        employeeService.addDepartmentToEmployee(department, employee) == true
+        employee.getDepartment() == department
+        department.getEmployees().get(0) == employee
+    }
+
+    def "should update department for an employee"() {
+        when:
+        Department departmentOld = new Department()
+        Employee employee = new Employee()
+        departmentOld.getEmployees().add(employee)
+        employee.setDepartment(departmentOld)
+        Department departmentNew = new Department()
+
+        then:
+        employeeService.updateDepartment(departmentOld, departmentNew, employee)
+        departmentOld.getEmployees().size() == 0
+        departmentNew.getEmployees().get(0) == employee
+        employee.getDepartment() == departmentNew
+    }
+
+    def "should find employee with id"() {
+        when:
+        Employee employee = new Employee()
+        employeeRepository.findById(ID) >> Optional.of(employee)
+
+        then:
+        employeeService.findEmployeeWithId(ID) == employee
+    }
+
+    def "should throw IllegalArgumentException and return message when trying to find employee with id"() {
+        when:
+        employeeRepository.findById(ID) >> Optional.empty()
+        String message = employeeService.findEmployeeWithId(ID)
+
+        then:
+        message == "Employee with id=" + ID + " doesn't exist. \nYou should create it, not update."
+    }
+
+    def "should get employee by id"() {
+        when:
+        Employee employee = new Employee()
+        employeeRepository.findById(ID) >> Optional.of(employee)
+
+        then:
+        employeeService.getEmployeeById(ID) == employee
+    }
+
+    def "should throw IllegalArgumentException when getting non-existent employee by id"() {
+        when:
+        employeeRepository.findById(ID) >> Optional.empty()
+        employeeService.getEmployeeById(ID)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "should fill employeeForm with employee data"() {
+        when:
+        Employee employee = new Employee()
+        employee.setSalary(new BigDecimal(SALARY))
+        employee.setPosition(POSITION)
+        Person person = new Person()
+        Address address = new Address()
+        address.setFlatNrResidence(FLAT_NR_RESIDENCE)
+        Department department = new Department()
+        department.setDepartmentName(DEPARTMENT_NAME)
+        employee.setPerson(person)
+        person.setAddress(address)
+        employee.setDepartment(department)
+        EmployeeForm employeeFormTest = new EmployeeForm()
+
+        then:
+        employeeService.fillEmployeeFormWithEmployee(employeeFormTest, employee) == true
+        employeeFormTest.getFlatNrResidence() == FLAT_NR_RESIDENCE
+        employeeFormTest.getDepartmentName() == DEPARTMENT_NAME
+        employeeFormTest.getSalary() == SALARY
     }
 }
