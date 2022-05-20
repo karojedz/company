@@ -17,10 +17,9 @@ public class EmployeeService {
     private final DepartmentService departmentService;
     private final PersonService personService;
 
-    public EmployeeForm createNewEmployee(EmployeeForm employeeForm) {
+    public Employee createNewEmployee(EmployeeForm employeeForm) {
         Employee employee = createEmployeeWithEmployeeForm(employeeForm);
-        employeeRepository.save(employee);
-        return employeeForm;
+        return employeeRepository.save(employee);
     }
 
     private Address extractAddressFromEmployeeForm(EmployeeForm employeeForm) {
@@ -88,92 +87,34 @@ public class EmployeeService {
         return true;
     }
 
-    public EmployeeForm deleteEmployeeById(Long id) {
-        Employee employee = employeeRepository.getById(id);
-        EmployeeForm employeeForm = mapToEmployeeForm(employee);
-        List<Employee> employees = employee.getDepartment().getEmployees();
-        employees.remove(employee);
-        employeeRepository.deleteById(id);
-        return employeeForm;
+    public String deleteEmployeeById(Long id) {
+        if (employeeRepository.existsById(id)) {
+            Employee employee = employeeRepository.getById(id);
+            List<Employee> employees = employee.getDepartment().getEmployees();
+            employees.remove(employee);
+            employeeRepository.deleteById(id);
+            return "Employee with id=" + id + " deleted successfully.";
+        }
+        return "There was no employee with id=" + id + " to be found.";
     }
 
-    public Object updateEmployee(Long id, EmployeeForm employeeForm) {
-        Employee employee;
-        Object employeeOrErrorMessage = findEmployeeWithId(id);
-        if (employeeOrErrorMessage instanceof String) {
-            return employeeOrErrorMessage;
+    public String updateEmployee(Long id, EmployeeForm employeeForm) {
+        if (employeeRepository.existsById(id)) {
+            Employee employee = employeeRepository.getById(id);
+            Person person = employee.getPerson();
+            Address address = employee.getPerson().getAddress();
+            Department departmentOld = employee.getDepartment();
+            Department department = departmentService.findDepartmentByName(employeeForm.getDepartmentName());
+            if (departmentOld!=department) {
+                updateDepartment(departmentOld, department, employee);
+            }
+            updateAddressWithEmployeeForm(address, employeeForm);
+            updatePersonWithEmployeeForm(person, employeeForm);
+            updateEmployeeWithEmployeeForm(employee, employeeForm);
+            employeeRepository.save(employee);
+            return "Employee with id=" + id + " updated";
         } else {
-            employee = (Employee) employeeOrErrorMessage;
+            return "Employee with id=" + id + " doesn't exist. \nYou should create it, not update.";
         }
-        Person person = employee.getPerson();
-        Address address = employee.getPerson().getAddress();
-        Department departmentOld = employee.getDepartment();
-        Department department = departmentService.findDepartmentByName(employeeForm.getDepartmentName());
-        if (departmentOld!=department) {
-            updateDepartment(departmentOld, department, employee);
-        }
-        updateAddressWithEmployeeForm(address, employeeForm);
-        updatePersonWithEmployeeForm(person, employeeForm);
-        updateEmployeeWithEmployeeForm(employee, employeeForm);
-        employeeRepository.save(employee);
-        return employeeForm;
-    }
-
-    private Object findEmployeeWithId(Long id) {
-        String message;
-        try {
-            Employee employee = getEmployeeById(id);
-            return employee;
-        } catch(IllegalArgumentException e) {
-            message = e.getMessage();
-        }
-        return message;
-    }
-
-    private Employee getEmployeeById(Long id) {
-        return employeeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Employee with id=" + id + " doesn't exist. \nYou should create it, not update."));
-    }
-
-    private EmployeeForm mapToEmployeeForm(Employee employee) {
-        EmployeeForm employeeForm = new EmployeeForm();
-        fillEmployeeFormWithEmployee(employeeForm, employee);
-        return employeeForm;
-    }
-
-    private boolean fillEmployeeFormWithEmployee(EmployeeForm employeeForm, Employee employee) {
-        employeeForm.setSalary(employee.getSalary().toString());
-        employeeForm.setPosition(employee.getPosition());
-        fillEmployeeFormWithPerson(employeeForm, employee.getPerson());
-        fillEmployeeFormWithAddress(employeeForm, employee.getPerson().getAddress());
-        fillEmployeeFormWithDepartment(employeeForm, employee.getDepartment());
-        return true;
-    }
-
-    private boolean fillEmployeeFormWithPerson(EmployeeForm employeeForm, Person person) {
-        employeeForm.setFirstName(person.getFirstName());
-        employeeForm.setLastName(person.getLastName());
-        employeeForm.setAge(person.getAge());
-        employeeForm.setPESEL(person.getPESEL());
-        return true;
-    }
-
-    private boolean fillEmployeeFormWithAddress(EmployeeForm employeeForm, Address address) {
-        employeeForm.setCityRegistered(address.getCityRegistered());
-        employeeForm.setStreetRegistered(address.getStreetRegistered());
-        employeeForm.setHouseNrRegistered(address.getHouseNrRegistered());
-        employeeForm.setFlatNrRegistered(address.getFlatNrRegistered());
-
-        //the optional address of residence:
-        employeeForm.setCityResidence(address.getCityResidence());
-        employeeForm.setStreetResidence(address.getStreetResidence());
-        employeeForm.setHouseNrResidence(address.getHouseNrResidence());
-        employeeForm.setFlatNrResidence(address.getFlatNrResidence());
-        return true;
-    }
-
-    private boolean fillEmployeeFormWithDepartment(EmployeeForm employeeForm, Department department) {
-        employeeForm.setDepartmentName(department.getDepartmentName());
-        return true;
     }
 }

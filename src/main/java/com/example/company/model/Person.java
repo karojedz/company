@@ -1,5 +1,6 @@
 package com.example.company.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,9 +25,10 @@ public class Person {
     private int age;
     private String PESEL;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL)
     private Address address;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "person")
     private Employee employee;
 

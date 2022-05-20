@@ -28,19 +28,19 @@ public class EmployeeController {
 
     @PostMapping("/employee")
     @ResponseBody
-    ResponseEntity<EmployeeForm> createEmployee(EmployeeForm employeeForm) {
-        return ResponseEntity.created(URI.create("")).body(employeeService.createNewEmployee(employeeForm));
+    ResponseEntity<Employee> createEmployee(EmployeeForm employeeForm) {
+        return ResponseEntity.ok(employeeService.createNewEmployee(employeeForm));
     }
 
     @DeleteMapping("/employee/{id}")
     @ResponseBody
-    ResponseEntity<EmployeeForm> deleteEmployee(@PathVariable Long id) {
+    ResponseEntity<String> deleteEmployee(@PathVariable Long id) {
         return ResponseEntity.ok(employeeService.deleteEmployeeById(id));
     }
 
     @PutMapping("/employee/{id}")
     @ResponseBody
-    ResponseEntity<Object> editEmployee(@PathVariable Long id, EmployeeForm employeeForm) {
+    ResponseEntity<String> editEmployee(@PathVariable Long id, EmployeeForm employeeForm) {
         return ResponseEntity.ok(employeeService.updateEmployee(id, employeeForm));
     }
 }

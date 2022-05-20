@@ -1,5 +1,6 @@
 package com.example.company.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import javax.persistence.*;
@@ -20,6 +21,7 @@ public class Department {
 
     private String departmentName;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "department")
     private List<Employee> employees = new ArrayList<>();
 

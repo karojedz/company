@@ -18,7 +18,7 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL)
     private Person person;
 
     @ManyToOne
@@ -26,8 +26,4 @@ public class Employee {
 
     private BigDecimal salary;
     private String position;
-
-    public Employee(Long id) {
-        this.id = id;
-    }
 }

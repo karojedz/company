@@ -48,17 +48,21 @@ class EmployeeServiceTest extends Specification{
     }
 
     def "should save new employee"() {
-        when:
+        given:
         Department department = new Department()
+
+        and:
         departmentService.findDepartmentByName(DEPARTMENT_NAME) >> department
+
+        when:
         employeeService.createNewEmployee(employeeForm)
 
         then:
         1 * employeeRepository.save(_)
     }
 
-    def "should delete employee with given id"() {
-        when:
+    def "should delete employee with given id and return message of success"() {
+        given:
         Employee employee = new Employee()
         Person person = new Person()
         person.setAddress(new Address())
@@ -71,16 +75,36 @@ class EmployeeServiceTest extends Specification{
         employee.setDepartment(department)
 
         and:
+        employeeRepository.existsById(ID) >> true
         employeeRepository.getById(ID) >> employee
-        employeeRepository.deleteById(ID) >>
-        employeeService.deleteEmployeeById(ID)
+        employeeRepository.deleteById(ID) >> null
 
-        then:
-        1 * employeeRepository.deleteById(ID)
+        expect:
+        employeeService.deleteEmployeeById(ID) == "Employee with id=" + ID + " deleted successfully."
+    }
+
+    def "should return message of failure when trying to delete employee by id"() {
+        given:
+        Employee employee = new Employee()
+        Person person = new Person()
+        person.setAddress(new Address())
+        employee.setPerson(person)
+        employee.setId(ID)
+        employee.setPosition(POSITION)
+        employee.setSalary(new BigDecimal(SALARY))
+        Department department = new Department()
+        department.getEmployees().add(employee)
+        employee.setDepartment(department)
+
+        and:
+        employeeRepository.existsById(ID) >> false
+
+        expect:
+        employeeService.deleteEmployeeById(ID) == "There was no employee with id=" + ID + " to be found."
     }
 
     def "should update existing employee"() {
-        when:
+        given:
         Employee employee = new Employee()
         Person person = new Person()
         person.setAddress(new Address())
@@ -92,11 +116,14 @@ class EmployeeServiceTest extends Specification{
         department.setDepartmentName(DEPARTMENT_NAME)
         department.getEmployees().add(employee)
         employee.setDepartment(department)
-
         employee.setPerson(person)
 
-        employeeRepository.findById(ID) >> Optional.of(employee)
+        and:
+        employeeRepository.existsById(ID) >> true
+        employeeRepository.getById(ID) >> employee
         departmentService.findDepartmentByName(DEPARTMENT_NAME) >> department
+
+        when:
         employeeService.updateEmployee(ID, employeeForm)
 
         then:
@@ -104,18 +131,20 @@ class EmployeeServiceTest extends Specification{
     }
 
     def "should return error message after trying to update non-existent employee"() {
-        when:
-        employeeRepository.findById(ID) >> Optional.empty()
+        given:
+        employeeRepository.existsById(ID) >> false
 
-        then:
+        expect:
         employeeService.updateEmployee(ID, employeeForm) == "Employee with id=" + ID + " doesn't exist. \nYou should create it, not update."
     }
 
     def "should extract address from employeeForm"() {
-        when:
+        given:
         Address expectedAddress = new Address(ID, CITY_REGISTERED, STREET_REGISTERED, HOUSE_NR_REGISTERED,
                 FLAT_NR_REGISTERED, CITY_RESIDENCE, STREET_RESIDENCE, HOUSE_NR_RESIDENCE, FLAT_NR_RESIDENCE,
                 new Person())
+
+        when:
         Address extracted = employeeService.extractAddressFromEmployeeForm(employeeForm)
         extracted.setPerson(new Person())
         extracted.setId(ID)
@@ -125,9 +154,11 @@ class EmployeeServiceTest extends Specification{
     }
 
     def "should extract person from employeeForm"() {
-        when:
+        given:
         Person expectedPerson = new Person(ID, FIRST_NAME, LAST_NAME, AGE, PESEL, new Address(), new Employee())
-        Person extracted = employeeService.extractPersonFromEmployeeForm(employeeForm);
+
+        when:
+        Person extracted = employeeService.extractPersonFromEmployeeForm(employeeForm)
         extracted.setAddress(new Address())
         extracted.setEmployee(new Employee())
         extracted.setId(ID)
@@ -137,7 +168,7 @@ class EmployeeServiceTest extends Specification{
     }
 
     def "should create employee with employee form"() {
-        when:
+        given:
         Address address =  new Address(ID, CITY_REGISTERED, STREET_REGISTERED, HOUSE_NR_REGISTERED,
                 FLAT_NR_REGISTERED, CITY_RESIDENCE, STREET_RESIDENCE, HOUSE_NR_RESIDENCE, FLAT_NR_RESIDENCE,
                 new Person())
@@ -148,12 +179,14 @@ class EmployeeServiceTest extends Specification{
         department.setDepartmentName(DEPARTMENT_NAME)
         Employee expectedEmployee = new Employee(ID, person, department, new BigDecimal(SALARY), POSITION)
         department.getEmployees().add(expectedEmployee)
-
-        and:
         Department departmentFromEmployeeForm = new Department()
         departmentFromEmployeeForm.setDepartmentName(DEPARTMENT_NAME)
         departmentFromEmployeeForm.setId(ID)
+
+        and:
         departmentService.findDepartmentByName(DEPARTMENT_NAME) >> departmentFromEmployeeForm
+
+        when:
         Employee extracted = employeeService.createEmployeeWithEmployeeForm(employeeForm)
         extracted.setId(ID)
         extracted.getPerson().setId(ID)
@@ -164,113 +197,57 @@ class EmployeeServiceTest extends Specification{
     }
 
     def "should update existing address with employeeForm"() {
-        when:
+        given:
         Address address = new Address()
 
-        then:
+        expect:
         employeeService.updateAddressWithEmployeeForm(address, employeeForm) == true
         address.getFlatNrResidence() == FLAT_NR_RESIDENCE
     }
 
     def "should update existing person with employeeForm"() {
-        when:
+        given:
         Person person = new Person()
 
-        then:
+        expect:
         employeeService.updatePersonWithEmployeeForm(person, employeeForm) == true
         person.getPESEL() == PESEL
     }
 
     def "should update existing employee with employeeForm"() {
-        when:
+        given:
         Employee employee = new Employee()
 
-        then:
+        expect:
         employeeService.updateEmployeeWithEmployeeForm(employee, employeeForm) == true
         employee.getSalary() == new BigDecimal(SALARY)
     }
 
     def "should create relationship between department and employee"() {
-        when:
+        given:
         Department department = new Department()
         Employee employee = new Employee()
 
-        then:
+        expect:
         employeeService.addDepartmentToEmployee(department, employee) == true
         employee.getDepartment() == department
         department.getEmployees().get(0) == employee
     }
 
     def "should update department for an employee"() {
-        when:
+        given:
         Department departmentOld = new Department()
         Employee employee = new Employee()
         departmentOld.getEmployees().add(employee)
         employee.setDepartment(departmentOld)
         Department departmentNew = new Department()
 
-        then:
+        when:
         employeeService.updateDepartment(departmentOld, departmentNew, employee)
+
+        then:
         departmentOld.getEmployees().size() == 0
         departmentNew.getEmployees().get(0) == employee
         employee.getDepartment() == departmentNew
-    }
-
-    def "should find employee with id"() {
-        when:
-        Employee employee = new Employee()
-        employeeRepository.findById(ID) >> Optional.of(employee)
-
-        then:
-        employeeService.findEmployeeWithId(ID) == employee
-    }
-
-    def "should throw IllegalArgumentException and return message when trying to find employee with id"() {
-        when:
-        employeeRepository.findById(ID) >> Optional.empty()
-        String message = employeeService.findEmployeeWithId(ID)
-
-        then:
-        message == "Employee with id=" + ID + " doesn't exist. \nYou should create it, not update."
-    }
-
-    def "should get employee by id"() {
-        when:
-        Employee employee = new Employee()
-        employeeRepository.findById(ID) >> Optional.of(employee)
-
-        then:
-        employeeService.getEmployeeById(ID) == employee
-    }
-
-    def "should throw IllegalArgumentException when getting non-existent employee by id"() {
-        when:
-        employeeRepository.findById(ID) >> Optional.empty()
-        employeeService.getEmployeeById(ID)
-
-        then:
-        thrown(IllegalArgumentException)
-    }
-
-    def "should fill employeeForm with employee data"() {
-        when:
-        Employee employee = new Employee()
-        employee.setSalary(new BigDecimal(SALARY))
-        employee.setPosition(POSITION)
-        Person person = new Person()
-        Address address = new Address()
-        address.setFlatNrResidence(FLAT_NR_RESIDENCE)
-        Department department = new Department()
-        department.setDepartmentName(DEPARTMENT_NAME)
-        employee.setPerson(person)
-        person.setAddress(address)
-        employee.setDepartment(department)
-        EmployeeForm employeeFormTest = new EmployeeForm()
-
-        then:
-        employeeService.fillEmployeeFormWithEmployee(employeeFormTest, employee) == true
-        employeeFormTest.getFlatNrResidence() == FLAT_NR_RESIDENCE
-        employeeFormTest.getDepartmentName() == DEPARTMENT_NAME
-        employeeFormTest.getSalary() == SALARY
     }
 }
